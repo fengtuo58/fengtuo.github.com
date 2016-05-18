@@ -1,3 +1,5 @@
+http://www.cnblogs.com/guolei/p/3580906.html
+
 1 安装gdb
 
 在Debian GNU/Linux Desktop中，应用程序 >> 附件 >> Root Terminal。输入密码，在Root权限下的终端下输入：
