@@ -1,0 +1,463 @@
+1 安装gdb
+
+在Debian GNU/Linux Desktop中，应用程序 >> 附件 >> Root Terminal。输入密码，在Root权限下的终端下输入：
+
+apt-get update
+
+……
+
+apt-get install  gdb
+……
+安装时选择y安装好gdb。
+
+
+2 gdb基本使用
+
+用一般权限的Termianl用vi编辑器编写一个C程序main.c：
+
+1 #include <stdio.h>
+
+2
+
+3
+
+4 int main(void)
+
+5 {
+
+6         int a = 1;
+
+7         int b = a;
+
+8
+
+9         printf("a = %d\tb =%d\n", a, b);
+
+10        return 0;
+11 }
+
+
+(1) 在可执行文件中加入源码信息
+
+这个过程用gcc来完成：
+gcc  –g   main.c  –o  main
+
+-g选项的作用是在可执行文件中加入源码信息，比如可执行文件中第几条机器指令对应源代码的第几行，但并不是把整个源文件嵌入到可执行文件中，而是在调试时必须保证gdb能找到源文件。
+
+(2) 进入gdb
+
+lly7@Lly7:~/LinuxC$ gcc -g main.c -o main
+
+lly7@Lly7:~/LinuxC$ gdb  main
+
+GNU gdb (GDB) 7.0.1-debian
+
+Copyright (C) 2009 Free SoftwareFoundation, Inc.
+
+License GPLv3+: GNU GPL version 3 or later<http://gnu.org/licenses/gpl.html>
+
+This is free software: you are free tochange and redistribute it.
+
+There is NO WARRANTY, to the extentpermitted by law.  Type "showcopying"
+
+and "show warranty" for details.
+
+This GDB was configured as"i486-linux-gnu".
+
+For bug reporting instructions, please see:
+
+<http://www.gnu.org/software/gdb/bugs/>...
+
+Reading symbols from/home/lly7/LinuxC/main...done.
+(gdb)
+
+gdb提供一个类似Shell的命令行环境，上面的(gdb)就是提示符，在提示符后面输入gdb输入的命令就可以实现其对应的功能。
+
+(3) gdb调试常用命令
+[1] start
+
+用start命令开始执行程序：
+
+(gdb)start
+
+Temporary breakpoint 1 at 0x80483cd: file main.c, line 6.
+
+Starting program: /home/lly7/LinuxC/main
+
+ 
+
+Temporary breakpoint 1, main () at main.c:6
+
+6                int a = 1;
+(gdb)
+
+gdb提示准备执行main.c程序的第六行代码。然后继续用(gdb)提示需要输入的命令。
+
+[2] 单步执行(n)
+
+(gdb)start
+
+Temporary breakpoint 1 at 0x80483cd: file main.c, line 6.
+
+Starting program: /home/lly7/LinuxC/main
+
+ 
+
+Temporary breakpoint 1, main () at main.c:6
+
+6               int a = 1;
+
+(gdb) n
+
+7               int b = a;
+
+(gdb) n
+
+9               printf("a = %d\tb =%d\n", a, b);
+
+(gdb) n
+
+a =1   b = 1
+
+10              return 0;
+
+(gdb) quit
+
+Adebugging session is active.
+
+ 
+
+         Inferior 1 [process 6268] will bekilled.
+
+ 
+
+Quitanyway? (y or n) y
+lly7@Lly7:~/LinuxC$
+
+在start命令后，每输入一个n就能够单步执行一条语句（输入一个命令后，直接回车表示最近输入命令的含义）。当程序执行完时，可以输入quit命令来推出gdb模式。
+
+[3] gdb断点调试
+
+[ break，display和continue ]
+
+lly7@Lly7:~/LinuxC$ gdb main
+
+……
+
+(gdb) start
+
+……
+
+(gdb) b 9
+
+Breakpoint 2 at 0x80483dd: file main.c,line 9.
+
+(gdb) c
+
+Continuing.
+
+ 
+
+Breakpoint 2, main () at main.c:9
+
+9                printf("a= %d\tb = %d\n", a, b);
+
+(gdb) display b
+
+1: b = 1
+
+(gdb) n
+
+a = 1        b= 1
+
+10              return0;
+
+1: b = 1
+
+(gdb)
+
+11     }
+
+1: b = 1
+
+(gdb)
+
+0xb7ea5ca6 in __libc_start_main () from/lib/i686/cmov/libc.so.6
+
+(gdb)
+
+Single stepping until exit from function__libc_start_main,
+
+which has no line number information.
+
+ 
+
+Program exited normally.
+
+(gdb) quit
+lly7@Lly7:~/LinuxC$
+
+gdb  main会进入main可执行程序的gdb模式，start命令就使程序准备运行程序中的第一条语句。b 9是break  9的简写（break的参数也可以以是某个函数名，表示在此函数处设置一个断点），表示在程序第九行设置一个断点。c是continue的缩写，表示运行程序，程序会在设置断点处停下来。displayb表示将b的值显示出来（undisplay取消对变量的跟踪），然后再输入单步调试命令n（next）就可以使程序继续运行。
+
+
+可见断点有助于快速跳过没有问题的代码，然后在有问题的代码上慢慢走慢慢分析，“断点加单步”是使用调试器的基本方法。至于应该在哪里设置断点，怎么知道哪些代码可以跳过而哪些代码要慢慢走，也要通过对错误现象的分析和假设来确定，以前我们用printf打印中间结 果时也要分析应该在哪里插入printf，打印哪些中间结果，调试的基本思路是一样的。
+
+
+[ info ]
+一次调试可以设置多个断点，用info命令可以查看已经设置的断点：
+
+(gdb) b 8
+
+Breakpoint 2 at 0x80483dd: file main.c, line 8.
+
+(gdb) b 9
+
+Note: breakpoint 2 also set at pc 0x80483dd.
+
+Breakpoint 3 at 0x80483dd: file main.c, line 9.
+
+(gdb) i breakpoints
+
+Num    Type           Disp EnbAddress    What
+
+2      breakpoint     keep y   0x080483dd in main at main.c:8
+
+3      breakpoint     keep y   0x080483dd in main at main.c:9
+(gdb)
+
+[delete]
+
+每个断点都有一个编号（有的断点行数不一样，但地址却一样，有的地方不能够设置断点或者说与上一个设置的断点等效），可以用编号指定删除某个断点：
+
+(gdb) delete 3
+
+(gdb) i breakpoints
+
+Num     Type           Disp Enb Address    What
+2       breakpoint     keep y  0x080483dd in main at main.c:8
+有时候一个断点暂时不用可以禁用掉而不必删除，这样以后想用的时候可以直接启用，而不必重新从代码里找应该在哪一行设断点，这个过程用disable和enable来完成。
+
+
+[条件断点 break 和run]
+
+gdb的断点功能非常灵活，还可以设置断点在满足某个条件时才激活，例如：
+
+(gdb) b 9 if a == 2
+
+Breakpoint 6 at0x80483dd: file main.c, line 9.
+
+(gdb) i breakpoints
+
+Num     Type           Disp Enb Address    What
+
+6       breakpoint     keep y  0x080483dd in main at main.c:9
+
+         stop only if a == 2
+
+(gdb) r
+
+The program beingdebugged has been started already.
+
+Start it from thebeginning? (y or n) y
+
+Starting program:/home/lly7/LinuxC/main
+
+a = 1          b = 1
+
+ 
+
+Program exitednormally.
+(gdb)
+
+r表示从头开始运行程序，在a==2的条件下中断才有效。a不等于2，所以中断无效。
+
+[4] gdb的观察点（watch 和c）
+
+断点是当程序执行到某一代码行时中断，而观察点是当程序访问某个存储单元时中断，如果我们不知道某个存储单元是在哪里被改动的，这时候观察点尤其有用。
+
+(gdb) start
+
+……
+
+(gdb) watch  b
+
+Hardware  watch point 8: b
+
+(gdb) c
+
+Continuing.
+
+Hardwarewatchpoint 8: b
+
+ 
+
+Old value =-1208147980
+Newvalue = 1
+
+程序执行到b存储单元，将此执行单元执行前后的值都显示出来。
+
+[5] 段错误
+如果程序运行时出现段错误，用gdb可以很容易定位到究竟是哪一行引发的段错误。在gdb中运行，遇到段错误会自动停下来，这时可以用命令查看当前执行到哪一行代码了。gdb显示段错误出现在_IO_vfscanf函数中，用bt命令可以看到是哪一个函数调用了它。
+
+
+[6] gdb基本命令
+gdb有许多有用的命令如list（显示源代码），这样就可以结合源码与调试信息更好的进行调试。将gdb常用命令摘抄如下表：
+
+命令
+	
+
+描述
+
+backtrace(bt)
+	
+
+查看各级函数调用及参数
+
+finish
+	
+
+连续运行到当前函数返回为止，然后停下来等待命令
+
+frame(f)  帧编号
+	
+
+选择栈帧
+
+info(i)  locals
+	
+
+查看当前栈帧局部变量的值
+
+list(l)
+	
+
+列出源代码，接着上次的位置往下列，每次列十行
+
+list  行号
+	
+
+列出第几行开始的源代码
+
+list  函数名
+	
+
+列出某个函数的源代码
+
+next(n)
+	
+
+执行下一行语句
+
+print(p)
+	
+
+打印表达式的值，通过表达式的值可以修改变量的值或者调用函数
+
+quit(q)
+	
+
+退出gdb调试环境
+
+set  var
+	
+
+修改变量的值
+
+start
+	
+
+开始执行程序，停在main函数第一行语句前面等待命令
+
+step(s)
+	
+
+执行下一行语句，如果有函数则进入到函数中
+
+break(b)  行号
+	
+
+在某一行设置断点
+
+break   函数名
+	
+
+在某个函数开头设置断点
+
+break… if…
+	
+
+设置条件断点
+
+continue(c)
+	
+
+从当前位置开始连续运行程序
+
+delete breakpoints 断点号
+	
+
+删掉此号的断点
+
+display  变量名
+	
+
+跟踪查看某个变量，每次停下来都显示它的值
+
+disable  breakpoints 断点号
+	
+
+禁用此断点
+
+enable  断点号
+	
+
+启用此断点
+
+info(i)  breakpoints
+	
+
+查看当前设置了哪些断点
+
+run(r)
+	
+
+从头开始连续运行程序
+
+undisplay  跟踪显示行号
+	
+
+取消跟踪显示
+
+watch
+	
+
+设置观察点
+
+info(i)   watchpoints
+	
+
+查看当前设置了哪些观察点
+
+x
+	
+
+从某个位置开始打印存储单元的内容，全部当成字节来看，而不区分哪个字节属于哪个变量
+
+disassemble
+	
+
+反汇编当前函数或者指定的函数，单独用disassemble命令是反汇编当前函数，如果disassemble命令后面跟函数名或地址则反汇编指定的函数。
+
+si
+	
+
+可以一条指令一条指令地单步调试。
+
+info  registers
+	
+
+可以显示所有寄存器的当前值。在gdb中表示寄存器名时前面要加个$，例如p $esp可以打印esp寄存器的值。
+set follow-fork-mode child/parent 	设置gdb在fork之后跟踪子进程/父进程
+set  args  'command-line' 	给执行的程序传命令行参数
+s(stepin) 	进入子函数
+
